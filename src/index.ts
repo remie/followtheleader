@@ -44,27 +44,23 @@ export class Elector extends EventEmitter {
     }
   }
 
-  private async detect(): Promise<void> {
-    try {
-      let leader: boolean = true;
-      const watcher = bonjour.findOne({ type: this.type }, (service) => {
-        if (service.name === this.name) {
-          this.leader = service;
-          leader = false;
-        }
-      });
+  private async detect(): Promise<boolean> {
+    let leader: boolean = true;
+    const watcher = bonjour.findOne({ type: this.type }, (service) => {
+      if (service.name === this.name) {
+        this.leader = service;
+        leader = false;
+      }
+    });
 
-      watcher.start();
+    watcher.start();
 
-      return new Promise<void>((resolve) => {
-        setTimeout(() => {
-          watcher.stop();
-          resolve();
-        }, Math.floor(Math.random() * 25000) + 5000);
-      });
-    } catch (err) {
-      return Promise.reject(err);
-    }
+    return new Promise<boolean>((resolve) => {
+      setTimeout(() => {
+        watcher.stop();
+        resolve(leader);
+      }, Math.floor(Math.random() * 25000) + 5000);
+    });
   }
 
   private lead() {
