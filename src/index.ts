@@ -18,7 +18,7 @@ export class Elector extends EventEmitter {
   private leader: any;
   private numOfFailedResponses: number = 0;
 
-  constructor(name: string, type: string = 'udp', port: number = 9001, host: string = '0.0.0.0', maxFailedResponses: number = 3) {
+  constructor(name: string, type: string = 'ftl', port: number = 9001, host: string = '0.0.0.0', maxFailedResponses: number = 3) {
     super();
     this.name = name;
     this.type = type;
@@ -66,7 +66,7 @@ export class Elector extends EventEmitter {
   private lead() {
     try {
       // Publish election over bonjour
-      const service = bonjour.publish({ name: this.name, type: this.type, port: this.port });
+      const service = bonjour.publish({ name: this.name, type: this.type, port: this.port, protocol: 'udp' });
 
       // Listen for heartbeat requests from followers
       const monitor = dgram.createSocket('udp4');
