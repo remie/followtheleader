@@ -1,0 +1,35 @@
+{
+  "name": "followtheleader",
+  "version": "1.0.0",
+  "description": "Zero-conf leader election based on bonjour",
+  "main": "./dist/index.js",
+  "typings": "./dist/index.d.ts",
+  "scripts": {
+    "build": "npm run lint && ./node_modules/typescript/bin/tsc",
+    "lint": "./node_modules/tslint/bin/tslint -p tsconfig.json",
+    "prepublish": "npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/remie/followtheleader.git"
+  },
+  "keywords": [
+    "leader",
+    "election",
+    "cluster"
+  ],
+  "author": "Remie Bolte (r.bolte@gmail.com)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/remie/followtheleader/issues"
+  },
+  "homepage": "https://github.com/remie/followtheleader#readme",
+  "dependencies": {
+    "bonjour": "^3.5.0"
+  },
+  "devDependencies": {
+    "@types/node": "^10.7.1",
+    "tslint": "^5.11.0",
+    "typescript": "^3.0.1"
+  }
+}

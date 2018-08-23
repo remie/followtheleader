@@ -1,0 +1,20 @@
+{
+    "compilerOptions": {
+        "experimentalDecorators": true,
+        "module": "commonjs",
+        "target": "es6",
+        "noImplicitAny": false,
+        "suppressImplicitAnyIndexErrors": true,
+        "emitDecoratorMetadata": true,
+        "declaration": true,
+        "rootDir": "./src",
+        "skipLibCheck": true,
+        "outDir": "./dist"
+    },
+    "includes": [
+        "./src/**/*.ts"
+    ],
+    "exclude": [
+        "node_modules"
+    ]
+}
