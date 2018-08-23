@@ -1,6 +1,6 @@
 {
   "name": "followtheleader",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Zero-conf leader election based on bonjour",
   "main": "./dist/index.js",
   "typings": "./dist/index.d.ts",
