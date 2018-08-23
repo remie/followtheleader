@@ -83,9 +83,11 @@ An error occurred somewhere during the election proces or in the heartbeat monit
 
 ## Caveats
 
-Zero-conf or Bonjour service discovery will only work for nodes that are on the same network subnet mask. If your nodes run on servers spreading multiple geographical locations, on different networks or if you are using a diffferent VLAN per server, you should look for other solutions. A good alternative would be [Elector](https://www.npmjs.com/package/elector) which uses ZooKeeper.
+Zero-conf / Bonjour / mDNS service discovery will only work for nodes that are on the same network subnet mask. If your nodes run on servers spreading multiple geographical locations, on different networks or if you are using a diffferent VLAN per server, you should look for other solutions. A good alternative would be [Elector](https://www.npmjs.com/package/elector) which uses ZooKeeper.
 
-If you are running your application in Amazon Web Services ECS clusters, you might want to try configuring your tasks with the `awsvpc` network mode. This will give each task their own elastic IP within the selected VPC subnet. It will allow them to become discoverable within the VPC. If you're running Kubernetes this should actually work by default due to the [Kubernetes networking model](https://kubernetes.io/docs/concepts/cluster-administration/networking/#kubernetes-model).
+If you are running your application in Amazon Web Services ECS clusters, you might want to try configuring your tasks with the `awsvpc` network mode. This will give each task their own elastic IP within the selected VPC subnet. This will only work if all ECS nodes are running in the same Availability Zone and subnet. If your cluster is running nodes in multiple Availability Zones, Zero-config/Bonjour/mDNS will not work.
+
+If you're running Kubernetes, you should look into the [Kubernetes/Contrib election solution](https://github.com/kubernetes/contrib/tree/master/election).
 
 ## License
 
