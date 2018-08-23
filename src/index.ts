@@ -102,6 +102,8 @@ export class Elector extends EventEmitter {
       });
     }, 5000);
 
+    // Tell the consumer that we are a follower;
+    this.emit('follower');
   }
 
 }
