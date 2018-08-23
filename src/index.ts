@@ -64,15 +64,22 @@ export class Elector extends EventEmitter {
   }
 
   private lead() {
-    // Publish election over bonjour
-    const service = bonjour.publish({ name: this.name, type: this.type, port: this.port });
+    try {
+      // Publish election over bonjour
+      const service = bonjour.publish({ name: this.name, type: this.type, port: this.port });
 
-    // Listen for heartbeat requests from followers
-    const monitor = dgram.createSocket('udp4');
-    monitor.on('message', (message, remote) => {
-      monitor.send(heartbeatResponse, 0, heartbeatResponse.length, remote.port, remote.address);
-    });
-    monitor.bind(this.port, this.host);
+      // Listen for heartbeat requests from followers
+      const monitor = dgram.createSocket('udp4');
+      monitor.on('message', (message, remote) => {
+        monitor.send(heartbeatResponse, 0, heartbeatResponse.length, remote.port, remote.address);
+      });
+      monitor.bind(this.port, this.host);
+    } catch (error) {
+      this.emit('error', new Error('Failed to register this instance as leader, restarting election proces'));
+      this.emit('reelection');
+      this.elect();
+      return;
+    }
 
     // Tell the consumer that we are a leader;
     this.emit('leader');
@@ -81,25 +88,29 @@ export class Elector extends EventEmitter {
   private follow() {
     // Heartbeat Ping of the leader to see if re-election is required
     const interval = setInterval(() => {
-      if (this.numOfFailedResponses >= this.maxFailedResponses) {
-        clearInterval(interval);
-        this.emit('reelection');
-        this.elect();
-      }
-
-      const client = dgram.createSocket('udp4');
-      client.on('error', (err) => { this.emit('error', err); });
-      client.on('message', (message, remote) => {
-        if (message.toString() === heartbeatResponse) {
-          this.numOfFailedResponses--;
+      try {
+        if (this.numOfFailedResponses >= this.maxFailedResponses) {
+          clearInterval(interval);
+          this.emit('reelection');
+          this.elect();
         }
-        client.close();
-      });
 
-      this.numOfFailedResponses++;
-      client.send(heartbeatRequest, 0, heartbeatRequest.length, this.leader.port, this.leader.addresses[0], (err, bytes) => {
-        if (err) this.emit('error', err);
-      });
+        const client = dgram.createSocket('udp4');
+        client.on('error', (err) => { this.emit('error', err); });
+        client.on('message', (message, remote) => {
+          if (message.toString() === heartbeatResponse) {
+            this.numOfFailedResponses--;
+          }
+          client.close();
+        });
+
+        this.numOfFailedResponses++;
+        client.send(heartbeatRequest, 0, heartbeatRequest.length, this.leader.port, this.leader.addresses[0], (err, bytes) => {
+          if (err) this.emit('error', err);
+        });
+      } catch (error) {
+        this.numOfFailedResponses++;
+      }
     }, 5000);
 
     // Tell the consumer that we are a follower;
