@@ -5,6 +5,7 @@
   "main": "./dist/index.js",
   "typings": "./dist/index.d.ts",
   "scripts": {
+    "dev": "./node_modules/typescript/bin/tsc -w",
     "build": "npm run lint && ./node_modules/typescript/bin/tsc",
     "lint": "./node_modules/tslint/bin/tslint -p tsconfig.json",
     "prepublishOnly": "npm run build"
