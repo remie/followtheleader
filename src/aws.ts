@@ -43,27 +43,40 @@ export class AWSElector extends EventEmitter {
   }
 
   private async detect(): Promise<boolean> {
-    // We are going for the full monty, pagination is not supported
-    this.filter.maxResults = 100;
+    try {
+      // We are going for the full monty, pagination is not supported
+      this.filter.maxResults = 100;
 
-    const listTasksResponse: ECS.ListTasksResponse = await this.ecs.listTasks(this.filter).promise();
-    this.peers = listTasksResponse.taskArns;
-    this.peers.sort();
-    return (this.peers[0] === this.metadata.TaskARN);
+      const listTasksResponse: ECS.ListTasksResponse = await this.ecs.listTasks(this.filter).promise();
+      this.peers = listTasksResponse.taskArns;
+      this.peers.sort();
+      return (this.peers[0] === this.metadata.TaskARN);
+    } catch (error) {
+      console.log('An error occurred while trying to detect elected leadership, restarting election process');
+      console.error(error);
+      this.emit('reelection');
+      this.elect();
+    }
   }
 
   private follow() {
+    // Tell the consumer that we are a follower;
+    this.emit('follower');
+
     const describeTasksRequest: ECS.DescribeTasksRequest = {
       tasks: this.peers
-    }
+    };
 
     this.ecs.waitFor('tasksStopped', describeTasksRequest).promise().then(() => {
+      console.log('A change has occurred which caused me to question the elected leadership, restarting election process');
+      this.emit('reelection');
+      this.elect();
+    }).catch((error) => {
+      console.log('An error occurred while monitoring changes to elected leadership, restarting election process');
+      console.error(error);
       this.emit('reelection');
       this.elect();
     });
-
-    // Tell the consumer that we are a follower;
-    this.emit('follower');
   }
 
 }
