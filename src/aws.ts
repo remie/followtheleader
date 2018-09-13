@@ -1,4 +1,5 @@
 
+import * as fs from 'fs';
 import * as EventEmitter from 'events';
 import { ECS } from 'aws-sdk';
 
@@ -14,14 +15,8 @@ export class AWSElector extends EventEmitter {
 
   constructor(clientConfiguration: ECS.ClientConfiguration, filter: ECS.ListTasksRequest) {
     super();
-
-    if (!process.env.ECS_CONTAINER_METADATA_FILE) {
-      throw new Error('AWSElector requires conatiner metadata to be enabled. Please see https://docs.aws.amazon.com/AmazonECS/latest/developerguide/container-metadata.html#enable-metadata');
-    }
-
     this.ecs = new ECS(clientConfiguration);
     this.filter = filter;
-    this.metadata = require(process.env.ECS_CONTAINER_METADATA_FILE);
   }
 
   public start() {
@@ -32,7 +27,6 @@ export class AWSElector extends EventEmitter {
     try {
       const leader = await this.detect();
       if (leader) {
-        // Tell the consumer that we are a leader;
         this.emit('leader');
       } else {
         this.follow();
@@ -44,10 +38,18 @@ export class AWSElector extends EventEmitter {
 
   private async detect(): Promise<boolean> {
     try {
+      // Make sure to wait for metadata to be available
+      await this.readMetadata();
+      if (!this.metadata) {
+        throw new Error('AWSElector requires conatiner metadata to be enabled and available. Please see https://docs.aws.amazon.com/AmazonECS/latest/developerguide/container-metadata.html#enable-metadata');
+      }
+
       // We are going for the full monty, pagination is not supported
       this.filter.maxResults = 100;
       const listTasksResponse: ECS.ListTasksResponse = await this.ecs.listTasks(this.filter).promise();
       this.peers = listTasksResponse.taskArns || [];
+
+      // Sort the list of peers to always get the same leader as a result
       this.peers.sort();
       return (this.peers[0] === this.metadata.TaskARN);
     } catch (error) {
@@ -94,6 +96,18 @@ export class AWSElector extends EventEmitter {
         this.elect();
       }
     });
+  }
+
+  private async readMetadata(): Promise<void> {
+    let count = 0;
+    while (!this.metadata && count <= 10) {
+      if (process.env.ECS_CONTAINER_METADATA_FILE && fs.existsSync(process.env.ECS_CONTAINER_METADATA_FILE)) {
+        this.metadata = require(process.env.ECS_CONTAINER_METADATA_FILE);
+      } else {
+        await new Promise((resolve) => setTimeout(() => resolve(), 500));
+      }
+      count++;
+    }
   }
 
 }
