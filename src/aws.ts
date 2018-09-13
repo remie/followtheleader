@@ -102,7 +102,11 @@ export class AWSElector extends EventEmitter {
     let count = 0;
     while (!this.metadata && count <= 10) {
       if (process.env.ECS_CONTAINER_METADATA_FILE && fs.existsSync(process.env.ECS_CONTAINER_METADATA_FILE)) {
-        this.metadata = require(process.env.ECS_CONTAINER_METADATA_FILE);
+        try {
+          this.metadata = require(process.env.ECS_CONTAINER_METADATA_FILE);
+        } catch (error) {
+          // Discard this error, as the while-loop will deal with this
+        }
       } else {
         await new Promise((resolve) => setTimeout(() => resolve(), 500));
       }
