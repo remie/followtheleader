@@ -26,6 +26,7 @@
   },
   "homepage": "https://github.com/remie/followtheleader#readme",
   "dependencies": {
+    "aws-sdk": "^2.307.0",
     "bonjour": "^3.5.0"
   },
   "devDependencies": {
