@@ -77,15 +77,22 @@ export class AWSElector extends EventEmitter {
       this.emit('reelection');
       this.elect();
     }).catch(async (error) => {
-      if (error.code === 'ThrottlingException') {
-        console.log('API rate limit exceeded, restarting election process in 2 minutes');
-        await new Promise((resolve) => setTimeout(() => resolve(), 2 * 60 * 1000));
+      // ECS WaitFor timed out, restart it
+      if (error.code === 'ResourceNotReady') {
+        this.follow();
+
+      // Something else went wrong
       } else {
-        console.log('An error occurred while monitoring changes to elected leadership, restarting election process in 5 minutes', error);
-        await new Promise((resolve) => setTimeout(() => resolve(), 5 * 60 * 1000));
+        if (error.code === 'ThrottlingException') {
+          console.log('API rate limit exceeded, restarting election process in 2 minutes');
+          await new Promise((resolve) => setTimeout(() => resolve(), 2 * 60 * 1000));
+        } else {
+          console.log('An error occurred while monitoring changes to elected leadership, restarting election process in 5 minutes', error);
+          await new Promise((resolve) => setTimeout(() => resolve(), 5 * 60 * 1000));
+        }
+        this.emit('reelection');
+        this.elect();
       }
-      this.emit('reelection');
-      this.elect();
     });
   }
 
