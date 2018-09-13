@@ -68,6 +68,7 @@ export class AWSElector extends EventEmitter {
     this.emit('follower');
 
     const describeTasksRequest: ECS.DescribeTasksRequest = {
+      cluster: this.filter.cluster,
       tasks: this.peers || []
     };
 
