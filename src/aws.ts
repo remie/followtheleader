@@ -12,7 +12,7 @@ export class AWSElector extends EventEmitter {
   private peers: string[];
   private numOfFailedResponses: number = 0;
 
-  constructor(clientConfiguration: ECS.ClientConfiguration, filter: ECS.ListTasksRequest = {}) {
+  constructor(clientConfiguration: ECS.ClientConfiguration, filter: ECS.ListTasksRequest) {
     super();
 
     if (!process.env.ECS_CONTAINER_METADATA_FILE) {
@@ -46,16 +46,21 @@ export class AWSElector extends EventEmitter {
     try {
       // We are going for the full monty, pagination is not supported
       this.filter.maxResults = 100;
-
       const listTasksResponse: ECS.ListTasksResponse = await this.ecs.listTasks(this.filter).promise();
-      this.peers = listTasksResponse.taskArns;
+      this.peers = listTasksResponse.taskArns || [];
       this.peers.sort();
       return (this.peers[0] === this.metadata.TaskARN);
     } catch (error) {
-      console.log('An error occurred while trying to detect elected leadership, restarting election process');
-      console.error(error);
-      this.emit('reelection');
-      this.elect();
+      if (error.code === 'ThrottlingException') {
+        console.log('API rate limit exceeded, restarting election process in 2 minutes');
+        await new Promise((resolve) => setTimeout(() => resolve(), 2 * 60 * 1000));
+        return this.detect();
+      } else {
+        console.log('An error occurred while trying to detect elected leadership, restarting election process');
+        console.error(error);
+        this.emit('reelection');
+        this.elect();
+      }
     }
   }
 
@@ -64,16 +69,21 @@ export class AWSElector extends EventEmitter {
     this.emit('follower');
 
     const describeTasksRequest: ECS.DescribeTasksRequest = {
-      tasks: this.peers
+      tasks: this.peers || []
     };
 
     this.ecs.waitFor('tasksStopped', describeTasksRequest).promise().then(() => {
       console.log('A change has occurred which caused me to question the elected leadership, restarting election process');
       this.emit('reelection');
       this.elect();
-    }).catch((error) => {
-      console.log('An error occurred while monitoring changes to elected leadership, restarting election process');
-      console.error(error);
+    }).catch(async (error) => {
+      if (error.code === 'ThrottlingException') {
+        console.log('API rate limit exceeded, restarting election process in 2 minutes');
+        await new Promise((resolve) => setTimeout(() => resolve(), 2 * 60 * 1000));
+      } else {
+        console.log('An error occurred while monitoring changes to elected leadership, restarting election process');
+        console.error(error);
+      }
       this.emit('reelection');
       this.elect();
     });
