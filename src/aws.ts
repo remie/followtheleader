@@ -9,7 +9,6 @@ export class AWSElector extends EventEmitter {
   private filter: ECS.ListTasksRequest;
   private metadata: any;
 
-  private leader: any;
   private peers: string[];
   private numOfFailedResponses: number = 0;
 
@@ -72,10 +71,10 @@ export class AWSElector extends EventEmitter {
     // Check for changes in elected leadership every 2 minutes
     const interval = setInterval(async () => {
       const isCurrentLeader = await this.detect();
-      if (!this.leader && isCurrentLeader || this.leader && !isCurrentLeader) {
+      if (isCurrentLeader) {
+        console.log('re-election!');
         clearInterval(interval);
-        this.emit('reelection');
-        this.elect();
+        this.emit('leader');
       }
     }, 2 * 60 * 1000);
   }
