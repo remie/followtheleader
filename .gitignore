@@ -1,2 +1,5 @@
 node_modules
 dist
+followtheleader.sublime-project
+followtheleader.sublime-workspace
+*.tgz
